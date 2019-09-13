@@ -7,12 +7,14 @@ class Blog{
  
     // object properties
     public $id;
+    public $alias;
     public $title;
     public $destination;
     public $date;
     public $duration;
     public $description;
-    public $img;
+    public $img_intro;
+    public $img_titel;
  
     // constructor with $db as database connection
     public function __construct(){
@@ -20,59 +22,67 @@ class Blog{
         $this->db = $database->getConnection();
     }
 
-    function read($id) {
-        // create query
-        $query = "SELECT
-                    title, destination, date, duration, description, img
-                  FROM "
-                    . $this->table_name;
-        if ($id != 0) {
-        $query .= " WERE (id=".$id.")";
-        }
-        $query .= " ORDER BY
-                    date DESC";
-        // prepare query statement
-        $stmt = $this->db->prepare($query);
-        // count number of records
-        $num = $stmt->execute();
-
-        if ($num>0) {
-            $blogs=array();
-            $blogs["records"]=array();
-            // fetch data
-            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+    function read($id, $selection) {
+        
+        if (is_numeric($id)) {           
+            // create query
+            if ($selection != 'all') {
+                $query = "SELECT ". $selection ." FROM " . $this->table_name;
+            } else {
+                $query = "SELECT * FROM " . $this->table_name;
+            }         
+            if ($id != 0) {
+            $query .= " WHERE (id=".$id.")";
+            }
+            $query .= " ORDER BY date DESC";
+            // prepare query statement
+            $stmt = $this->db->prepare($query);
+            // count number of records
+            $num = $stmt->execute();
+            if ($num>0) {
+                // fetch data
+                $row = $stmt->fetch(PDO::FETCH_ASSOC);
                 extract($row);
                 $item = array(
+                    "id" => $id,
+                    "alias" => $alias,
                     "title" => $title,
                     "destination" => $destination,
                     "date" => date("d.m.Y",strtotime($date)),
                     "duration" => $duration,
                     "description" => $description,
-                    "img" => $img
+                    "img_intro" => $img_intro,
+                    "img_titel" => $img_titel,
                 );
-                array_push($blogs["records"], $item);
+                // grab corresponding posts
+                $postObj = new Post();
+                $item["posts"] = $postObj->read(0,'all',$id,false,false);
 
+                $blogs["records"] = $item;
+
+                // set response code - 200 OK
+                http_response_code(200);
+                // send records in json format
+                echo json_encode($blogs);
+                return;
             }
-            // set response code - 200 OK
-            http_response_code(200);
-
-            // send records in json format
-            echo json_encode($blogs);
         }
+        http_response_code(204);
+        echo('no data found');
     }
 
     function create($id) {
-        http_response_code(201);
+        http_response_code(500);
         echo('not yet implemented');
     }
 
     function write($id) {
-        http_response_code(201);
+        http_response_code(500);
         echo('not yet implemented');
     }
 
     function delete($id) {
-        http_response_code(201);
+        http_response_code(500);
         echo('not yet implemented');
     }
 }
