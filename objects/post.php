@@ -98,7 +98,6 @@ class Post{
                 extract($num_likes);
                 $num_likes = $num_likes['likes'];
             }
-            print_r($num_likes);
             $data['likes'] = (integer)$num_likes + 1;
             // write data to DB
             $query = "UPDATE " . $this->table_name;
