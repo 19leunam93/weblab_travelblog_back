@@ -1,8 +1,30 @@
 <?php
 //require headers
-header("Access-Control-Allow-Origin: *");
-header("Content-Type: application/json; charset=UTF-8");
-header("Access-Control-Allow-Methods: GET, POST, OPTIONS, PUT, DELETE");
+
+
+// Allow from any origin
+if (isset($_SERVER['HTTP_ORIGIN'])) {
+    // Decide if the origin in $_SERVER['HTTP_ORIGIN'] is one
+    // you want to allow, and if so:
+    header("Access-Control-Allow-Origin: {$_SERVER['HTTP_ORIGIN']}");
+    header("Content-Type: application/json; charset=UTF-8");
+    header('Access-Control-Allow-Credentials: true');
+    header('Access-Control-Max-Age: 86400');    // cache for 1 day
+}
+
+// Access-Control headers are received during OPTIONS requests
+if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+
+    if (isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD']))
+        // may also be using PUT, PATCH, HEAD etc
+        header("Access-Control-Allow-Methods: GET, POST, OPTIONS, PUT, DELETE");         
+
+    if (isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS']))
+        header("Access-Control-Allow-Headers: {$_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS']}");
+
+    exit(0);
+}
+
 
 if ($_SERVER['REQUEST_METHOD'] == 'PUT') {
     parse_str(file_get_contents("php://input"), $put);
@@ -57,6 +79,14 @@ function getData() {
     return $data;
 }
 
+function getBearerToken() {
+    $auth_header = explode(' ', $_SERVER["HTTP_AUTHORIZATION"]);
+    $token = '';
+    if ($auth_header[0] == 'Bearer') {
+        $token = $auth_header[1];
+    }    
+    return $token;
+}
 
 $route = getUrl();
 $request_data = getData();
@@ -64,9 +94,9 @@ $request_data = getData();
 $jwtObj = new JWT;
 $jwt_key = 'example_key';
 $auth = new Authentication($jwtObj, $jwt_key);
-$auth->session_token = $_COOKIE['secure_token'];
-$auth->username = $_COOKIE['secure_username'];
-
+$auth->secure_token = getBearerToken();
+//$auth->session_token = $_COOKIE['secure_token'];
+//$auth->username = $_COOKIE['secure_username'];
 
 switch ($route['site']) {
     case 'blog':
@@ -132,10 +162,10 @@ switch ($route['site']) {
         $token = $auth->getToken($request_data['username'],$request_data['password']);
         if ($token !== false) {
             // token sucessfully created
-            setcookie('secure_username',$auth->username,0,'/','.weblab.spuur.ch',false,true);
-            setcookie('secure_token',$token,0,'/','.weblab.spuur.ch',false,true);
+            //setcookie('secure_username',$auth->username, 0,'/','',true,true);
+            //setcookie('secure_token',$token, 0,'/','',true,true);
             http_response_code(200);
-            echo('{"token_generated": "true"}');
+            echo('{"secure_token": "'.$token.'", "secure_username": "'.$auth->username.'"}');
         } else {
             // authentication to be done
             http_response_code(403);

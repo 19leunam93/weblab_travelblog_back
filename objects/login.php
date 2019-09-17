@@ -1,4 +1,4 @@
-<?php
+<?php 
 class Login{
 
     function read($auth) {
@@ -14,11 +14,10 @@ class Login{
                 "authorized_current_action" => $auth->authorized,
                 "authorized_actions" => $auth->authorized_to
             );
-
         // set response code - 200 OK
         http_response_code(200);
         // send records in json format
         echo json_encode($login);
-        return;
+        return;        
     }
 }

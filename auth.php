@@ -5,7 +5,7 @@ class Authentication{
     public $username = '';
     public $name = '';
     public $usergroup = 'public';
-    public $session_token;
+    public $secure_token;
     public $authorized_to = array();
     public $requested_view = '';
     public $authorized = false;
@@ -24,6 +24,7 @@ class Authentication{
         $this->acl = array(
             'admin' => array('blogs' => array('visit','create','edit','delete'),
                              'login' => array('visit','create','edit','delete'),
+                             'logout' => array('visit','create','edit','delete'),
                              'blog' => array('visit','create','edit','delete'),
                              'post' => array('visit'),
                              'edit' => array('visit','create','edit','delete'),
@@ -32,6 +33,7 @@ class Authentication{
                          ),
             'blogger' => array('blogs' => array('visit'),
                              'login' => array('visit'),
+                             'logout' => array('visit'),
                              'blog' => array('visit','create','edit'),
                              'post' => array('visit'),
                              'edit' => array('visit'),
@@ -40,6 +42,7 @@ class Authentication{
                          ),
             'public' => array('blogs' => array('visit'),
                              'login' => array('visit'),
+                             'logout' => array('visit'),
                              'blog' => array('visit'),
                              'post' => array('visit'),
                              'edit' => array(),
@@ -87,13 +90,10 @@ class Authentication{
                     "password" => '',
                     "usergroup" => 'public'  
                 );
-            }
-            
+            }            
         }        
         return $user;
     }
-
-
 
     function getToken($bn,$pw) {
         $user = $this->readUser($bn);
@@ -109,37 +109,31 @@ class Authentication{
     }
 
     function validateToken($token) {
+        $result = array(false, '');
         $decoded = $this->jwt->decode($token, $this->jwt_key, array('HS256'));
         $decoded_array = (array) $decoded;
-        // username corresponds to username in token
-        if ($decoded_array['sub'] == $this->username) {
-            $t = time() - $decoded_array['iat'];
-            // timestamp (iat) has to be less than 86'400s (24h)
-            if ($t < 86400) {
-                $validation_payload = $this->getPayload($this->username,$decoded_array['iat']);
-                $validation_token = $this->jwt->encode($validation_payload, $this->jwt_key);
-                // new calculated token corresponds to received token 
-                if ($token === $validation_token) {
-                    return true;
-                } 
-            }
-            
-        }
-        return false;
+        $t = time() - $decoded_array['iat'];
+        // timestamp (iat) has to be less than 86'400s (24h)
+        if ($t < 86400) {
+                $result[0] = true;
+                $result[1] = $decoded_array['sub'];
+                return $result;
+        } else {
+            return $result;
+        }        
     }
 
     function authoriseView($view, $action) {
-        // if there is no username-cookie, set username to 'no_login'
-        if (empty($this->username)) {
-            $this->username = 'no_login';
-        }
         $this->requested_view = $view;
-        $user = $this->readUser($this->username);        
         // if token exist, do token authentication
-        // username- and token-cookie have to be set
-        if (!empty($this->username) && !empty($this->session_token)) {            
+        if (!empty($this->secure_token)) {            
             // token has to be valid
-            if ($this->validateToken($this->session_token)) {
+            $res = $this->validateToken($this->secure_token);
+            $validation = $res[0];
+            $username = $res[1];
+            if ($validation) {
+                // read user information from db
+                $user = $this->readUser($username);
                 // check, if this user is permitted to do the requested action
                 if (in_array($action,$this->acl[$user['username']][$view])) {
                     $this->authorized = true;
@@ -152,10 +146,12 @@ class Authentication{
             }
         } // check, if the action is a public action
         elseif (in_array($action,$this->acl['public'][$view])) {
+            $this->username = 'no_login';
             $this->authorized = true;
             $this->authorized_to = $this->acl['public'][$view];
             return;
         } else {
+            $this->username = 'no_login';
             $this->authorized_to = $this->acl['public'][$view];
             return;
         }
