@@ -6,7 +6,7 @@ class Database{
     private $host = "localhost";
     private $db_name = "spuurch_weblab03";
     private $username = "spuurch_weblab";
-    private $password = "M6PnVe4g7XU9Gj2";
+    private $password = "password";
     public $sql;
  
     // get the database connection
