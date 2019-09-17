@@ -16,11 +16,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'PUT') {
 
 
 //include files
+include_once 'jwt/BeforeValidException.php';
+include_once 'jwt/ExpiredException.php';
+include_once 'jwt/SignatureInvalidException.php';
+include_once 'jwt/JWT.php';
+
+use \Firebase\JWT\JWT;
+
 include_once 'database.php';
 include_once 'objects/gallery.php';
 include_once 'objects/post.php';
 include_once 'objects/blog.php';
 include_once 'objects/blogs.php';
+include_once 'objects/login.php';
+include_once 'auth.php';
 
 function getUrl() { 
     $route = array('method' => '','site' => '','id' => 0, 'selection' => 'all');
@@ -42,6 +51,8 @@ function getData() {
         $data = constant('$_PUT');
     } else if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $data = $_POST;
+    } else if ($_SERVER['REQUEST_METHOD'] == 'GET') {
+        $data = $_GET;
     }
     return $data;
 }
@@ -50,13 +61,20 @@ function getData() {
 $route = getUrl();
 $request_data = getData();
 
+$jwtObj = new JWT;
+$jwt_key = 'example_key';
+$auth = new Authentication($jwtObj, $jwt_key);
+$auth->session_token = $_COOKIE['secure_token'];
+$auth->username = $_COOKIE['secure_username'];
+
 
 switch ($route['site']) {
     case 'blog':
         $blog = new Blog();
         switch ($route['method']) {
             case 'GET':
-                $blog->read($route['id'],$route['selection']);
+                $auth->authoriseView($route['site'],'visit');
+                $blog->read($route['id'],$route['selection'], $auth);
                 break;
             case 'POST':
                 $blog->create($route['id']);
@@ -68,40 +86,61 @@ switch ($route['site']) {
                 $blog->delete($route['id']);
                 break;
             default:
-                $blog->read($route['id']);
+                $auth->authoriseView($route['site'],'visit');
+                $blog->read($route['id'],$route['selection'], $auth);
                 break;
         }        
         break;
 
     case 'blogs':
         $blog = new BlogList();
-        $blog->read();
+        $auth->authoriseView($route['site'],'visit');
+        $blog->read($auth);
         break;
 
     case 'post':
         $post = new Post();
         switch ($route['method']) {
             case 'GET':
-                $post->read($route['id'], $route['selection']);
+                $auth->authoriseView($route['site'],'visit');
+                $post->read($route['id'], $route['selection'], $auth);
                 break;
             case 'POST':
-                //$post->create();
+                $post->create($route['id']);
                 break;
             case 'PUT':
+                //$auth->authoriseView($route['site'],'visit');
                 $post->write($route['id'], $route['selection'], $request_data);
                 break;
             case 'DELETE':
                 $post->delete($route['id']);
                 break;
             default:
-                $post->read($route['id']);
+                $auth->authoriseView($route['site'],'visit');
+                $post->read($route['id'], $route['selection'], $auth);
                 break;
         }
         break;
 
     case 'login':
-        http_response_code(500);
-        echo('route not supported');
+        $login = new Login();
+        $auth->authoriseView($route['site'],'visit');
+        $login->read($auth);
+        break;
+
+    case 'token':
+        $token = $auth->getToken($request_data['username'],$request_data['password']);
+        if ($token !== false) {
+            // token sucessfully created
+            setcookie('secure_username',$auth->username,0,'/','.weblab.spuur.ch',false,true);
+            setcookie('secure_token',$token,0,'/','.weblab.spuur.ch',false,true);
+            http_response_code(200);
+            echo('{"token_generated": "true"}');
+        } else {
+            // authentication to be done
+            http_response_code(403);
+            echo('Invalid Username or Password');
+        }
         break;
     
     default:

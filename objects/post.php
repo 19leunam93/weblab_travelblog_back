@@ -22,7 +22,7 @@ class Post{
         $this->db = $database->getConnection();
     }
 
-    function read($id=0, $selection='all', $blog_id=false, $user_id=false, $http=true) {
+    function read($id, $selection, $auth, $blog_id=false, $user_id=false, $http=true) {
         // create query
         if ($selection == 'all') {
             $query = "SELECT * FROM " . $this->table_name;
@@ -65,13 +65,20 @@ class Post{
                     $galleryObj = new Gallery();
                     $item["gallery"] = $galleryObj->read($galery_id);
                 }                
-                array_push($posts["records"], $item);        
+                array_push($posts["records"], $item);
+
             }
             
 
             if (!$http) {
                 return $posts;
             } else {
+                $posts["authorization"] = array(
+                "logged_in_as_user" => $auth->username,
+                "logged_in_as_usergroup" => $auth->usergroup,
+                "authorized_current_action" => $auth->authorized,
+                "authorized_actions" => $auth->authorized_to
+            );
                 // set response code - 200 OK
                 http_response_code(200);
 
@@ -117,7 +124,17 @@ class Post{
             echo json_encode($likes);
             return;
         }
-        http_response_code(204);
-        echo('no data found');
+        http_response_code(501);
+        echo('not yet implemented');
+    }
+
+    function create($id) {
+        http_response_code(501);
+        echo('not yet implemented');
+    }
+
+    function delete($id) {
+        http_response_code(501);
+        echo('not yet implemented');
     }
 }

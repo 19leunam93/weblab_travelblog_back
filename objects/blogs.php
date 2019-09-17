@@ -22,7 +22,7 @@ class BlogList{
         $this->db = $database->getConnection();
     }
 
-    function read() {
+    function read($auth) {
         // create query
         $query = "SELECT * FROM " . $this->table_name;
         $query .= " ORDER BY date DESC";
@@ -50,6 +50,12 @@ class BlogList{
                 array_push($blogs["records"], $item);
 
             }
+            $blogs["authorization"] = array(
+                "logged_in_as_user" => $auth->username,
+                "logged_in_as_usergroup" => $auth->usergroup,
+                "authorized_current_action" => $auth->authorized,
+                "authorized_actions" => $auth->authorized_to
+            );
             // set response code - 200 OK
             http_response_code(200);
 

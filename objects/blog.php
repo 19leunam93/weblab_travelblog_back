@@ -22,7 +22,7 @@ class Blog{
         $this->db = $database->getConnection();
     }
 
-    function read($id, $selection) {
+    function read($id, $selection, $auth) {
         
         if (is_numeric($id)) {           
             // create query
@@ -56,9 +56,15 @@ class Blog{
                 );
                 // grab corresponding posts
                 $postObj = new Post();
-                $item["posts"] = $postObj->read(0,'all',$id,false,false);
+                $item["posts"] = $postObj->read(0,'all',$auth, $id,false,false);
 
                 $blogs["records"] = $item;
+                $blogs["authorization"] = array(
+                "logged_in_as_user" => $auth->username,
+                "logged_in_as_usergroup" => $auth->usergroup,
+                "authorized_current_action" => $auth->authorized,
+                "authorized_actions" => $auth->authorized_to
+            );
 
                 // set response code - 200 OK
                 http_response_code(200);
@@ -72,17 +78,17 @@ class Blog{
     }
 
     function create($id) {
-        http_response_code(500);
+        http_response_code(501);
         echo('not yet implemented');
     }
 
     function write($id) {
-        http_response_code(500);
+        http_response_code(501);
         echo('not yet implemented');
     }
 
     function delete($id) {
-        http_response_code(500);
+        http_response_code(501);
         echo('not yet implemented');
     }
 }
