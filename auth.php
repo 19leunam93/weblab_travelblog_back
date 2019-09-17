@@ -7,6 +7,7 @@ class Authentication{
     public $usergroup = 'public';
     public $session_token;
     public $authorized_to = array();
+    public $requested_view = '';
     public $authorized = false;
 
     private $jwt;
@@ -132,9 +133,8 @@ class Authentication{
         if (empty($this->username)) {
             $this->username = 'no_login';
         }
-
-        $user = $this->readUser($this->username);
-        
+        $this->requested_view = $view;
+        $user = $this->readUser($this->username);        
         // if token exist, do token authentication
         // username- and token-cookie have to be set
         if (!empty($this->username) && !empty($this->session_token)) {            

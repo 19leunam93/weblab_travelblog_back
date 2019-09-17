@@ -76,6 +76,7 @@ class Post{
                 $posts["authorization"] = array(
                 "logged_in_as_user" => $auth->username,
                 "logged_in_as_usergroup" => $auth->usergroup,
+                "requested_view" => $auth->requested_view,
                 "authorized_current_action" => $auth->authorized,
                 "authorized_actions" => $auth->authorized_to
             );
