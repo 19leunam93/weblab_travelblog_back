@@ -1,4 +1,4 @@
-<?php
+<?php 
 class Authentication{
  
     // object properties
@@ -6,6 +6,7 @@ class Authentication{
     public $name = '';
     public $usergroup = 'public';
     public $secure_token;
+    public $token_time_to_expire = 'no_token';
     public $authorized_to = array();
     public $requested_view = '';
     public $authorized = false;
@@ -14,6 +15,7 @@ class Authentication{
     private $jwt_key;
     private $jwt_payload;
     private $acl;
+    private $token_validtime = 86400; // token is valid for 86'400s (24h);
 
     function __construct($jwtObj, $jwt_key) { 
         $this->jwt = $jwtObj;
@@ -110,9 +112,15 @@ class Authentication{
 
     function validateToken($token) {
         $result = array(false, '');
-        $decoded = $this->jwt->decode($token, $this->jwt_key, array('HS256'));
+        try {
+            $decoded = $this->jwt->decode($token, $this->jwt_key, array('HS256'));
+        } catch (Exception $e) {
+            $this->token_time_to_expire = -100;
+            return $result;
+        }        
         $decoded_array = (array) $decoded;
         $t = time() - $decoded_array['iat'];
+        $this->token_time_to_expire = $this->token_validtime - $t;
         // timestamp (iat) has to be less than 86'400s (24h)
         if ($t < 86400) {
                 $result[0] = true;
@@ -126,7 +134,7 @@ class Authentication{
     function authoriseView($view, $action) {
         $this->requested_view = $view;
         // if token exist, do token authentication
-        if (!empty($this->secure_token)) {            
+        if (!empty($this->secure_token)) {       
             // token has to be valid
             $res = $this->validateToken($this->secure_token);
             $validation = $res[0];

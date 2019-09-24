@@ -10,6 +10,8 @@ if (isset($_SERVER['HTTP_ORIGIN'])) {
     header("Content-Type: application/json; charset=UTF-8");
     header('Access-Control-Allow-Credentials: true');
     header('Access-Control-Max-Age: 86400');    // cache for 1 day
+} else {
+    header("Content-Type: application/json; charset=UTF-8");
 }
 
 // Access-Control headers are received during OPTIONS requests
@@ -126,7 +128,7 @@ switch ($route['site']) {
         $blog = new BlogList();
         $auth->authoriseView($route['site'],'visit');
         $blog->read($auth);
-        break;
+        break; 
 
     case 'post':
         $post = new Post();
@@ -139,8 +141,12 @@ switch ($route['site']) {
                 $post->create($route['id']);
                 break;
             case 'PUT':
-                //$auth->authoriseView($route['site'],'visit');
-                $post->write($route['id'], $route['selection'], $request_data);
+                if ($route['selection'] == 'likes') {
+                    $auth->authoriseView($route['site'],'visit');
+                } else {
+                    $auth->authoriseView($route['site'],'write');
+                }                
+                $post->write($route['id'], $route['selection'], $request_data, $auth);
                 break;
             case 'DELETE':
                 $post->delete($route['id']);
@@ -169,12 +175,12 @@ switch ($route['site']) {
         } else {
             // authentication to be done
             http_response_code(403);
-            echo('Invalid Username or Password');
+            echo('{"message": "Invalid Username or Password"}');
         }
         break;
     
     default:
-        http_response_code(500);
-        echo('route not supported');
+        http_response_code(501);
+        echo('{"message": "route not supported"}');
         break;
 }
