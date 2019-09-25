@@ -4,8 +4,8 @@ class Database{
  
     // specify your own database credentials
     private $host = "localhost";
-    private $db_name = "spuurch_weblab03";
-    private $username = "spuurch_weblab";
+    private $db_name = "db_name";
+    private $username = "username";
     private $password = "password";
     public $sql;
  
