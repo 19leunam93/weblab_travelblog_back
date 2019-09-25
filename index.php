@@ -101,7 +101,7 @@ $auth->secure_token = getBearerToken();
 //$auth->username = $_COOKIE['secure_username'];
 
 switch ($route['site']) {
-    case 'blog':
+    case 'blog': 
         $blog = new Blog();
         switch ($route['method']) {
             case 'GET':
@@ -168,19 +168,18 @@ switch ($route['site']) {
         $token = $auth->getToken($request_data['username'],$request_data['password']);
         if ($token !== false) {
             // token sucessfully created
-            //setcookie('secure_username',$auth->username, 0,'/','',true,true);
-            //setcookie('secure_token',$token, 0,'/','',true,true);
             http_response_code(200);
             echo('{"secure_token": "'.$token.'", "secure_username": "'.$auth->username.'"}');
+            exit;
         } else {
             // authentication to be done
-            http_response_code(403);
+            http_response_code(401);
             echo('{"message": "Invalid Username or Password"}');
+            exit;
         }
-        break;
     
     default:
         http_response_code(501);
         echo('{"message": "route not supported"}');
-        break;
+        exit;
 }

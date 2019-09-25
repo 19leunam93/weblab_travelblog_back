@@ -22,16 +22,15 @@ class Blog{
         $this->db = $database->getConnection();
     }
 
-    function read($id, $selection, $auth) {
-        
-        if (is_numeric($id)) {           
+    function read($id=0, $selection, $auth) {      
+        if (is_numeric($id)) { 
             // create query
             if ($selection != 'all') {
                 $query = "SELECT ". $selection ." FROM " . $this->table_name;
             } else {
                 $query = "SELECT * FROM " . $this->table_name;
             }         
-            if ($id != 0) {
+            if ($id > 0) {
             $query .= " WHERE (id=".$id.")";
             }
             $query .= " ORDER BY date DESC";
@@ -40,57 +39,65 @@ class Blog{
             // count number of records
             $num = $stmt->execute();
             if ($num>0) {
+                $blogs=array();
+                $blogs["records"]=array();
                 // fetch data
-                $row = $stmt->fetch(PDO::FETCH_ASSOC);
-                extract($row);
-                $item = array(
-                    "id" => $id,
-                    "alias" => $alias,
-                    "title" => $title,
-                    "destination" => $destination,
-                    "date" => date("d.m.Y",strtotime($date)),
-                    "duration" => $duration,
-                    "description" => $description,
-                    "img_intro" => $img_intro,
-                    "img_titel" => $img_titel,
-                );
-                // grab corresponding posts
-                $postObj = new Post();
-                $item["posts"] = $postObj->read(0,'all',$auth, $id,false,false);
+                while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                    extract($row);
+                    $item = array(
+                        "id" => $id,
+                        "alias" => $alias,
+                        "title" => $title,
+                        "destination" => $destination,
+                        "date" => date("d.m.Y",strtotime($date)),
+                        "duration" => $duration,
+                        "description" => $description,
+                        "img_intro" => $img_intro,
+                        "img_titel" => $img_titel
+                    );
+                    // grab corresponding posts
+                    if ($selection == 'all') {
+                        $postObj = new Post();
+                        $item["posts"] = $postObj->read(0,'all',$auth, $id,false,false);
+                    }                   
 
-                $blogs["records"] = $item;
+                    array_push($blogs["records"], $item);
+                }
                 $blogs["authorization"] = array(
-                "logged_in_as_user" => $auth->username,
-                "logged_in_as_usergroup" => $auth->usergroup,
-                "requested_view" => $auth->requested_view,
-                "authorized_current_action" => $auth->authorized,
-                "authorized_actions" => $auth->authorized_to,
-                "token_is_valid_for" => (string)$auth->token_time_to_expire
-            );
-
+                    "logged_in_as_user" => $auth->username,
+                    "logged_in_as_usergroup" => $auth->usergroup,
+                    "requested_view" => $auth->requested_view,
+                    "authorized_current_action" => $auth->authorized,
+                    "authorized_actions" => $auth->authorized_to,
+                    "token_is_valid_for" => (string)$auth->token_time_to_expire
+                );
                 // set response code - 200 OK
                 http_response_code(200);
                 // send records in json format
                 echo json_encode($blogs);
-                return;
+                exit;
             }
         }
         http_response_code(204);
         echo('{"message": "no data found"}');
+        exit;
     }
 
     function create($id) {
         http_response_code(501);
         echo('{"message": "not yet implemented"}');
+        exit;
     }
 
     function write($id) {
         http_response_code(501);
         echo('{"message": "not yet implemented"}');
+        exit;
     }
 
     function delete($id) {
         http_response_code(501);
         echo('{"message": "not yet implemented"}');
+        exit;
     }
 }

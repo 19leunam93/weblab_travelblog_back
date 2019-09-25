@@ -159,9 +159,20 @@ class Authentication{
             $this->authorized_to = $this->acl['public'][$view];
             return;
         } else {
+            // not authorized to perform the request
             $this->username = 'no_login';
             $this->authorized_to = $this->acl['public'][$view];
-            return;
+            $msg["authorization"] = array(
+                "logged_in_as_user" => $this->username,
+                "logged_in_as_usergroup" => $this->usergroup,
+                "requested_view" => $this->requested_view,
+                "authorized_current_action" => $this->authorized,
+                "authorized_actions" => $this->authorized_to,
+                "token_is_valid_for" => (string)$this->token_time_to_expire
+            );
+            http_response_code(401);
+            echo json_encode($msg);
+            exit;
         }
     }
 }
